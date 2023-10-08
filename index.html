@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta name="author" content="Valentin Coellar Serrano 2023 / valcoellar@gmail.com">
+        <title>MoonQuake Map 2.0</title>
+
+        <!-- Babylon.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+        <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+        <script src="https://cdn.babylonjs.com/recast.js"></script>
+        <script src="https://cdn.babylonjs.com/ammo.js"></script>
+        <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
+        <script src="https://cdn.babylonjs.com/cannon.js"></script>
+        <script src="https://cdn.babylonjs.com/Oimo.js"></script>
+        <script src="https://cdn.babylonjs.com/earcut.min.js"></script>
+        <script src="https://cdn.babylonjs.com/babylon.js"></script>
+        <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+        <script src="https://cdn.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+        <script src="https://cdn.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+        <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+        <script src="https://cdn.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+        <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+        <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+        
+        
+        
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+                z-index: 1;
+            }
+            
+            #canvasZone {
+                width: 100%;
+                height: 100%;
+
+            }
+            
+            /* ---- navBar Stylos ----- */
+            .navBarBase{
+                background-color: #0718C4;
+                position: absolute;
+                width: 120px;
+                height: 100%;
+                z-index: 10;
+                border-top-right-radius: 45px;
+                text-align: left;
+                
+            }
+            .listItem {
+                list-style: none;
+   
+            }
+            #yearDropdown{
+                width: 70px;
+            }
+            #monthDropdown {
+                width: 70px;
+            }
+            #dayDropdown {
+                width: 70px;
+            }
+          
+            .navBarLabel  {
+                color: white;
+           
+                font-size: 24px;
+            }
+            /* -------Footer Stylos ------*/
+            .footer {
+                position: fixed;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                height: 50px;
+                background-color: #0718C4;
+                color: white;
+                text-align: center;
+                border-top-right-radius: 45px;
+              }
+              
+              /* ----- logo ------ */
+              .nasaLogo {
+                position: fixed;
+                left: 50px;
+                bottom: 0;
+               border-radius: 45px;
+                z-index: 11;
+              }
+              .logoImg {
+                height: 130px;
+                width: 150px;
+                border-radius: 45px;
+              }
+            /* -------- infoPanel -----*/
+              .infoPanel {
+               /* background-color: white;*/
+                opacity: 0.4; 
+                position: fixed;
+                left: 100px;
+                top: 10%;
+                width: 200px;
+                height: 130px;
+                               
+              background: rgba(255,255,255,0.45);
+              -webkit-backdrop-filter: blur(2px);
+              backdrop-filter: blur(2px);
+              border: 1px solid rgba(255,255,255,0.225);
+              border-radius: 25px;
+              box-shadow: 15px 15px 43px -5px #000000;
+              }
+              .infoText {
+                color: white;
+                font-size: 24px;
+                font-weight: bolder;
+                text-align: center;
+              }
+              
+
+
+        </style>
+    </head>
+<body>
+<div class="navBarBase">
+    <ul class="navBarList">
+        <li class="listItem">
+          <p class="navBarLabel">Year</p>
+          <select id="yearDropdown"></select>
+        </li>
+        <li class="listItem">
+          <p class="navBarLabel">Month</p>
+          <select id="monthDropdown"></select>
+        </li>
+        <li class="listItem">
+          <p href="#"  class="navBarLabel">Day</p>
+          <select id="dayDropdown"></select>
+        </li>
+      </ul>
+</div>
+
+<div class="footer">
+    <p class="footerTitle" >MoonQuake Map 2.0</p>
+</div>
+
+<div class="nasaLogo">
+    <img class="logoImg" src="logo3.png" alt="NASA Logo"> </div>
+
+
+    <div class="infoPanel">
+        <p class="infoText">Magnitude</p>
+        <p id="infoMagnitude" class="infoText">0</p>       
+    
+    </div>
+
+<div id="canvasZone"><canvas id="renderCanvas"></canvas></div>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+
+        var startRenderLoop = function (engine, canvas) {
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        }
+
+        var engine = null;
+        var scene = null;
+        var sceneToRender = null;
+        var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
+
+        var createScene = function() {
+            // Scene setup
+            var scene = new BABYLON.Scene(engine);
+            var camera = new BABYLON.ArcRotateCamera("Camera", 3 * Math.PI / 2, Math.PI / 2, 60, BABYLON.Vector3.Zero(), scene);
+
+            camera.attachControl(canvas, false);
+            var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+            //const light2 = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(1, 10, 1), scene);
+            light.intensity = 0.7;
+            //light2.intensity = 1;
+
+
+
+
+/// Skybox
+var skybox = BABYLON.MeshBuilder.CreateSphere("esfera2", {diameter: 2000.0, sideOrientation: BABYLON.Mesh.BACKSIDE}, scene);
+var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+
+    skyboxMaterial.backFaceCulling = false;
+    skyboxMaterial.diffuseTexture = new BABYLON.Texture("milky.jpg", scene);
+    skyboxMaterial.reflectionTexture = new BABYLON.MirrorTexture("milky.jpg", 1024, scene, true);
+
+
+
+    skyboxMaterial.diffuseColor = new BABYLON.Color3(1,1, 1);
+    skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+    skybox.material = skyboxMaterial;
+
+
+// Moon
+        var sphere = BABYLON.MeshBuilder.CreateSphere("moon", {diameter: 25}, scene);
+     
+
+    
+	var material = new BABYLON.StandardMaterial("material", scene);
+    material.diffuseTexture = new BABYLON.Texture("lroc_color_poles_1k.jpeg", scene);
+	  material.emissiveTexture = new BABYLON.Texture("lroc_color_poles_1k.jpeg", scene);
+    material.emissiveIntensity = 0.1;
+
+//<<<<<<<<<<<<<HERE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+// Create a bump texture and set its level of bumpiness
+
+var bumpTexture =  new BABYLON.Texture("ldem_3_8bit.jpg", scene);
+bumpTexture.level = 1;
+// Assign the bump texture to the material
+sphere.bumpTexture = bumpTexture;
+
+//material.detailMap.texture = new BABYLON.Texture("ldem_3_8bit.jpg", scene);
+//material.detailMap.isEnabled = true;
+//material.detailMap.bumpLevel = 1; // between 0 and 1
+
+
+// >>>>>>>>>>>>>>>>HERE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
+
+	// Asignar el material a la esfera
+	sphere.material = material;
+
+
+
+    
+    
+    
+// Pointer
+    var redMaterial = new BABYLON.StandardMaterial("redMaterial", scene);
+    redMaterial.diffuseColor = new BABYLON.Color3(2, 0, 0);
+    var redPoint = BABYLON.Mesh.CreateSphere("redPoint", 8, 2, scene);
+    redPoint.material = redMaterial;
+    // redPoint.position.z =  12; 
+    
+    
+    
+    
+// ------------------------Create the animation --------------------------------------
+var animation = new BABYLON.Animation("pulsateAnimation", "scaling", 30, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+
+// Define the keyframes
+var keys = [];
+keys.push({ frame: 0, value: new BABYLON.Vector3(0, 0, 0) });
+keys.push({ frame: 15, value: new BABYLON.Vector3(2, 2, 2) });
+keys.push({ frame: 30, value: new BABYLON.Vector3(0, 0, 0) });
+
+// Set the animation keys
+animation.setKeys(keys);
+
+// Attach the animation to the sphere
+redPoint.animations.push(animation);
+
+// Run the animation
+scene.beginAnimation(redPoint, 0, 30, true);
+
+// ------------------------Create the animation --------------------------------------    
+  
+
+
+
+
+  const locateQuake = (latitud, longitud) => {
+        let radius = 12;
+    // let latitud = 40.97;
+    //let longitud = 11.44;
+
+    let x = radius * Math.cos(latitud) * Math.cos(longitud)
+    let y = radius * Math.cos(latitud) * Math.sin(longitud)
+    let z = radius * Math.sin(latitud)
+
+    redPoint.position.x =  x; 
+    redPoint.position.y =  y; 
+    redPoint.position.z =  z; 
+
+       
+    console.log(x);
+    console.log(y);
+    console.log(z);
+    /*
+    place 3D objects on a sphere
+        x = radius * cos(latitude) * cos(longitude)
+        y = radius * cos(latitude) * sin(longitude)
+        z = radius * sin(latitude)
+    */
+
+    
+};
+ 
+
+
+
+// locateQuake(40.97 ,11.44);
+
+// ------ ALL DATA -----
+let datosData = {
+  "data": [
+    {
+      "year": 1971,
+      "months": [
+        {
+          "month": "April",
+          "days": [
+            {
+              "day": 107,
+              "data": [
+                {
+                  "latitude": 48,
+                  "longitude": 35,
+                  "magnitude": 2.8,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "May",
+          "days": [
+            {
+              "day": 140,
+              "data": [
+                {
+                  "latitude": 42,
+                  "longitude": -24,
+                  "magnitude": 2,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+            
+          ]
+        },
+        {
+          "month": "July",
+          "days": [
+            {
+              "day": 192,
+              "data": [
+                {
+                  "latitude": 43,
+                  "longitude": -47,
+                  "magnitude": 1.9,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        }
+        
+      ]
+    },
+    {
+      "year": 1972,
+      "months": [
+        {
+          "month": "January",
+          "days": [
+            {
+              "day": 2,
+              "data": [
+                {
+                  "latitude": 54,
+                  "longitude": 101,
+                  "magnitude": 1.9,
+                  "document": "nakamura_1979_sm_locations"
+                }
+                
+              ]
+            }
+            
+          ]
+        },
+        {
+          "month": "September",
+          "days": [
+            {
+              "day": 261,
+              "data": [
+                {
+                  "latitude": 12,
+                  "longitude": 46,
+                  "magnitude": 1,
+                  "document": "nakamura_1979_sm_locations"
+                }
+                
+              ]
+            }
+          ]
+        },
+        {
+          "month": "December",
+          "days": [
+            {
+              "day": 341,
+              "data": [
+                {
+                  "latitude": 51,
+                  "longitude": 45,
+                  "magnitude": 1.4,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            },{
+              "day": 344,
+              "data": [
+                {
+                  "latitude": -20,
+                  "longitude": -80,
+                  "magnitude": 1.2,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "year": 1973,
+      "months": [
+        {
+          "month": "February",
+          "days": [
+            {
+              "day": 39,
+              "data": [
+                {
+                  "latitude": 33,
+                  "longitude": 35,
+                  "magnitude": 0.8,
+                  "document": "nakamura_1979_sm_locations"
+                }
+                
+              ]
+            }
+            
+          ]
+        },
+        {
+          "month": "March",
+          "days": [
+            {
+              "day": 72,
+              "data": [
+                {
+                  "latitude": -84,
+                  "longitude": -134,
+                  "magnitude": 3.2,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "June",
+          "days": [
+            {
+              "day": 171,
+              "data": [
+                {
+                  "latitude": -1,
+                  "longitude": -71,
+                  "magnitude": 2.2,
+                  "document": "nakamura_1979_sm_locations"
+                }
+                
+              ]
+            }
+            
+          ]
+        },
+        {
+          "month": "October",
+          "days": [
+            {
+              "day": 274,
+              "data": [
+                {
+                  "latitude": -37,
+                  "longitude": -29,
+                  "magnitude": 1.1,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "year": 1974,
+      "months": [
+        {
+          "month": "February",
+          "days": [
+            {
+              "day": 54,
+              "data": [
+                {
+                  "latitude": 36,
+                  "longitude": -16,
+                  "magnitude": 0.7,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "March",
+          "days": [
+            {
+              "day": 86,
+              "data": [
+                {
+                  "latitude": -48,
+                  "longitude": -106,
+                  "magnitude": 1.6,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "April",
+          "days": [
+            {
+              "day": 109,
+              "data": [
+                {
+                  "latitude": -37,
+                  "longitude": 42,
+                  "magnitude": 0.9,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "May",
+          "days": [
+            {
+              "day": 149,
+              "data": [
+                {
+                  "latitude": 1,
+                  "longitude": 1,
+                  "magnitude": 0.6,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "July",
+          "days": [
+            {
+              "day": 192,
+              "data": [
+                {
+                  "latitude": 21,
+                  "longitude": 88,
+                  "magnitude": 2.7,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "year": 1975,
+      "months": [
+        {
+          "month": "January",
+          "days": [
+            {
+              "day": 3,
+              "data": [
+                {
+                  "latitude": 29,
+                  "longitude": -98,
+                  "magnitude": 3.2,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "January",
+          "days": [
+            {
+              "day": 12,
+              "data": [
+                {
+                  "latitude": 75,
+                  "longitude": 40,
+                  "magnitude": 1.7,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "January",
+          "days": [
+            {
+              "day": 13,
+              "data": [
+                {
+                  "latitude": -2,
+                  "longitude": -51,
+                  "magnitude": 1.1,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "February",
+          "days": [
+            {
+              "day": 44,
+              "data": [
+                {
+                  "latitude": -19,
+                  "longitude": -26,
+                  "magnitude": 1.4,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "May",
+          "days": [
+            {
+              "day": 127,
+              "data": [
+                {
+                  "latitude": -49,
+                  "longitude": -45,
+                  "magnitude": 1.3,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "May",
+          "days": [
+            {
+              "day": 147,
+              "data": [
+                {
+                  "latitude": 3,
+                  "longitude": -58,
+                  "magnitude": 1.4,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "November",
+          "days": [
+            {
+              "day": 314,
+              "data": [
+                {
+                  "latitude": -8,
+                  "longitude": 64,
+                  "magnitude": 1.8,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "year": 1976,
+      "months": [
+        {
+          "month": "January",
+          "days": [
+            {
+              "day": 4,
+              "data": [
+                {
+                  "latitude": 50,
+                  "longitude": 30,
+                  "magnitude": 1.8,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "January",
+          "days": [
+            {
+              "day": 12,
+              "data": [
+                {
+                  "latitude": 38,
+                  "longitude": 44,
+                  "magnitude": 1.1,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "March",
+          "days": [
+            {
+              "day": 66,
+              "data": [
+                {
+                  "latitude": 50,
+                  "longitude": -20,
+                  "magnitude": 2.3,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "March",
+          "days": [
+            {
+              "day": 68,
+              "data": [
+                {
+                  "latitude": -19,
+                  "longitude": -12,
+                  "magnitude": 1.8,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "month": "May",
+          "days": [
+            {
+              "day": 137,
+              "data": [
+                {
+                  "latitude": 77,
+                  "longitude": -10,
+                  "magnitude": 1.5,
+                  "document": "nakamura_1979_sm_locations"
+                }
+              ]
+            }
+          ]
+        }
+               
+      ]
+    }
+  ]
+};
+
+// Parse the JSON data from the "datosData" variable
+
+const data = datosData;
+
+// Get the year dropdown element
+const yearDropdown = document.getElementById("yearDropdown");
+const monthDropdown = document.getElementById("monthDropdown");
+const dayDropdown = document.getElementById("dayDropdown");
+
+// Loop through the years in the JSON and add them as options to the dropdown
+for (const year of data.data) {
+  const option = document.createElement("option");
+  option.value = year.year;
+  option.text = year.year;
+  yearDropdown.add(option);
+}
+
+// --------------------o-----------------------------------
+
+// Add an event listener to the year dropdown
+yearDropdown.addEventListener("click", () => {
+    // Clear the month and day dropdowns
+    monthDropdown.innerHTML = "";
+    dayDropdown.innerHTML = "";
+    
+    // Get the selected year
+    const selectedYear = yearDropdown.value;
+    
+    
+    // Find the months for the selected year in the JSON
+    const selectedYearData = data.data.find((year) => year.year == selectedYear);
+    console.log(typeof(selectedYear));
+    console.log(typeof(data.data[0].year));
+    
+        
+    const months = selectedYearData.months;
+
+    // Populate the month dropdown with the months for the selected year
+    for (const month of months) {
+        const option = document.createElement("option");
+        option.value = month.month;
+        option.text = month.month;
+        monthDropdown.add(option);
+    }
+    
+});
+
+//   ----------------------o------------------------------------
+
+// Add an event listener to the month dropdown
+monthDropdown.addEventListener("click", () => {
+  // Clear the day dropdown
+  dayDropdown.innerHTML = "";
+
+  // Get the selected year and month
+  const selectedYear = yearDropdown.value;
+  const selectedMonth = monthDropdown.value;
+
+  // Find the days for the selected year and month in the JSON
+  const selectedYearData = data.data.find((year) => year.year == selectedYear);
+  const selectedMonthData = selectedYearData.months.find((month) => month.month == selectedMonth);
+  const days = selectedMonthData.days;
+
+  //console.log(days);
+  
+  // Populate the day dropdown with the days for the selected year and month
+  for (const day of days) {
+      const option = document.createElement("option");
+    option.value = day.day;
+    option.text = day.day;
+    dayDropdown.add(option);
+}
+});
+
+// ------------------------o---------------------------------------
+
+// Add an event listener to the day dropdown
+dayDropdown.addEventListener("click", () => {
+  // Get the selected year, month, and day
+  const selectedYear = yearDropdown.value;
+  const selectedMonth = monthDropdown.value;
+  const selectedDay = dayDropdown.value;
+
+  // Find the data for the selected year, month, and day in the JSON
+  const selectedYearData = data.data.find((year) => year.year == selectedYear);
+  const selectedMonthData = selectedYearData.months.find((month) => month.month == selectedMonth);
+  const selectedDayData = selectedMonthData.days.find((day) => day.day === parseInt(selectedDay));
+
+  // Load the latitude, longitude, and magnitude variables with the corresponding values
+  const latitude = selectedDayData.data[0].latitude;
+  const longitude = selectedDayData.data[0].longitude;
+  const magnitude = selectedDayData.data[0].magnitude;
+  
+  // Do something with the latitude, longitude, and magnitude variables
+  console.log(`Latitude: ${latitude}, Longitude: ${longitude}, Magnitude: ${magnitude}`);
+
+  locateQuake(latitude ,longitude);
+
+  
+  const infoMagnitudeConst = document.getElementById("infoMagnitude");
+  infoMagnitudeConst.innerHTML = magnitude;
+});
+
+
+
+// --------------- EOF -------    
+
+
+            return scene;
+        };
+
+                window.initFunction = async function() {
+                    
+                    
+                    
+                    var asyncEngineCreation = async function() {
+                        try {
+                        return createDefaultEngine();
+                        } catch(e) {
+                        console.log("the available createEngine function failed. Creating the default engine instead");
+                        return createDefaultEngine();
+                        }
+                    }
+
+                    window.engine = await asyncEngineCreation();
+        if (!engine) throw 'engine should not be null.';
+        startRenderLoop(engine, canvas);
+        window.scene = createScene();};
+        initFunction().then(() => {sceneToRender = scene                    
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+
+
+
+    </script>
+   
+</body>
+</html>

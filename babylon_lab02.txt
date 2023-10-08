@@ -1,0 +1,6 @@
+place 3D objects on a sphere
+
+
+x = radius * cos(latitude) * cos(longitude)
+y = radius * cos(latitude) * sin(longitude)
+z = radius * sin(latitude)

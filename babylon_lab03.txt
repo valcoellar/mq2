@@ -1,0 +1,24 @@
+https://forum.babylonjs.com/t/world-latitude-longitude-to-scene-vector3-conversion/16515
+
+
+
+--------------
+function getVector3(coordinates) {
+  const lat = coordinates.latitude * Math.PI / 180;
+  const lon = coordinates.longitude * Math.PI / 180;
+  const r = sphereRadius; // replace with the actual radius of your sphere
+
+  const x = r * Math.cos(lat) * Math.cos(lon);
+  const y = r * Math.sin(lat);
+  const z = -r * Math.cos(lat) * Math.sin(lon);
+
+  const vector = new BABYLON.Vector3(x, y, z);
+  vector.rotate(BABYLON.Axis.X, Math.PI / 2);
+  vector.rotate(BABYLON.Axis.Y, -Math.PI / 2);
+  vector.translate(new BABYLON.Vector3(sphereCenterX, sphereCenterY, sphereCenterZ));
+
+  return vector;
+}
+
+
+Note that sphereRadius, sphereCenterX, sphereCenterY, and sphereCenterZ should be replaced with the actual values for your sphere. Also, this implementation assumes that the sphere is centered at the origin and oriented with the North Pole along the positive Y-axis and the Prime Meridian along the negative X-axis.

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Three.js Example</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script>
+
+
+      // Set up the scene, camera, and renderer
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Add a sphere with a moon texture
+      const moonTexture = new THREE.TextureLoader().load("lroc_color_poles_1k.jpeg");
+      const moonGeometry = new THREE.SphereGeometry(5, 32, 32);
+      const moonMaterial = new THREE.MeshBasicMaterial({ map: moonTexture });
+      const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+      scene.add(moon);
+
+      // Add a skybox with a stars texture
+      const starsTexture = new THREE.TextureLoader().load("skybox1.jpg");
+      const starsGeometry = new THREE.SphereGeometry(1000, 32, 32);
+      const starsMaterial = new THREE.MeshBasicMaterial({
+        map: starsTexture,
+        side: THREE.BackSide,
+      });
+      const stars = new THREE.Mesh(starsGeometry, starsMaterial);
+      scene.add(stars);
+
+      // Add mouse controls to the camera
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+      // Set the camera position and render the scene
+      camera.position.z = 20;
+      function animate() {
+        requestAnimationFrame(animate);
+        moon.rotation.y += 0.01;
+        renderer.render(scene, camera);
+      }
+      animate();
+    </script>
+  </body>
+</html>
