@@ -1,11 +1,11 @@
 {
-  "name": "babylon_test_express",
+  "name": "babylon_develop_server_express",
   "version": "1.0.0",
-  "description": "prueba de babylonjs con autoserver express",
+  "description": "MoonQuake babylonjs with autoserver express",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Valentin Coellar Serrano Sep - 2023",
+  "author": "Valentin Coellar Serrano Oct - 2023",
   "license": "ISC"
 }
