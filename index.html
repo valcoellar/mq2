@@ -219,7 +219,7 @@ var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
 	  material.emissiveTexture = new BABYLON.Texture("lroc_color_poles_1k.jpeg", scene);
     material.emissiveIntensity = 0.1;
 
-//<<<<<<<<<<<<<HERE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 // Create a bump texture and set its level of bumpiness
 
 var bumpTexture =  new BABYLON.Texture("ldem_3_8bit.jpg", scene);
@@ -231,13 +231,6 @@ sphere.bumpTexture = bumpTexture;
 //material.detailMap.isEnabled = true;
 //material.detailMap.bumpLevel = 1; // between 0 and 1
 
-
-// >>>>>>>>>>>>>>>>HERE>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-
-
-	// Asignar el material a la esfera
 	sphere.material = material;
 
 
